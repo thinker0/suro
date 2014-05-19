@@ -71,6 +71,7 @@ subprojects {
       compile 'com.ning:compress-lzf:0.9.5'
       compile 'com.leansoft:bigqueue:0.7.0'
       compile 'commons-io:commons-io:2.4'
+      compile 'org.apache.curator:curator-x-discovery:2.4.2'
 
       compile (
         [group: 'org.apache.hadoop', name: 'hadoop-core', version: '0.20.205.0', transitive: false]
@@ -98,8 +99,7 @@ project(':suro-core') {
 project(':suro-client') {
   dependencies {
     compile project(':suro-core')
-    compile 'org.apache.curator:curator-x-discovery:2.4.2'
-    
+
     testCompile project(':suro-core').sourceSets.test.output
     testCompile project(':suro-kafka')
   }

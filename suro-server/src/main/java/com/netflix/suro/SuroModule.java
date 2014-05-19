@@ -24,6 +24,7 @@ import com.netflix.suro.aws.PropertyAWSCredentialsProvider;
 import com.netflix.suro.jackson.DefaultObjectMapper;
 import com.netflix.suro.routing.RoutingMap;
 import com.netflix.suro.server.StatusServer;
+import com.netflix.suro.server.ZookeeperXDiscoveryService;
 import com.netflix.suro.sink.SinkManager;
 
 import java.util.Properties;
@@ -45,5 +46,6 @@ public class SuroModule extends AbstractModule {
         bind(AWSCredentialsProvider.class).to(PropertyAWSCredentialsProvider.class);
         bind(SuroService.class);
         bind(StatusServer.class);
+        bind(ZookeeperXDiscoveryService.class);
     }
 }

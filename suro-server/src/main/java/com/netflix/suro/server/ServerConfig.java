@@ -119,6 +119,14 @@ public class ServerConfig {
 
     public int messageRouterDefaultPollTimeout = 500;
     public int messageRouterMaxPollTimeout = 2500;
+
+    public static final String ZOOKEEPER_URI = "SuroServer.zooKeeperURI";
+    @Configuration(ZOOKEEPER_URI)
+    private String zookeeperUri = "";
+    public String getZookeeperUri() {
+        return zookeeperUri;
+    }
+
     @Override
     public String toString() {
         return "ServerConfig [port=" + port + ", startupTimeout="

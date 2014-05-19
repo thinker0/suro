@@ -22,6 +22,7 @@ import com.google.inject.Singleton;
 import com.netflix.suro.queue.MessageSetProcessor;
 import com.netflix.suro.server.StatusServer;
 import com.netflix.suro.server.ThriftServer;
+import com.netflix.suro.server.ZookeeperXDiscoveryService;
 import com.netflix.suro.sink.SinkManager;
 import org.apache.log4j.Logger;
 
@@ -43,13 +44,15 @@ public class SuroService {
     private final ThriftServer server;
     private final MessageSetProcessor queue;
     private final SinkManager  sinkManager;
+    private final ZookeeperXDiscoveryService xDiscoveryService;
     
     @Inject
-    private SuroService(StatusServer statusServer, ThriftServer thriftServer, MessageSetProcessor queue, SinkManager sinkManager) {
+    private SuroService(StatusServer statusServer, ThriftServer thriftServer, MessageSetProcessor queue, SinkManager sinkManager, ZookeeperXDiscoveryService xDiscoveryService) {
         this.statusServer = statusServer;
         this.server       = thriftServer;
         this.queue        = queue;
         this.sinkManager  = sinkManager;
+        this.xDiscoveryService = xDiscoveryService;
     }
 
     @PostConstruct
@@ -58,6 +61,7 @@ public class SuroService {
             queue.start();
             server.start();
             statusServer.start();
+            xDiscoveryService.start();
         } 
         catch (Exception e) {
             log.error("Exception while starting up server: " + e.getMessage(), e);
@@ -72,6 +76,7 @@ public class SuroService {
             statusServer.shutdown();
             queue       .shutdown();
             sinkManager .shutdown();
+            xDiscoveryService.shutdown();
         } catch (Exception e) {
             //ignore every exception while shutting down but loggign should be done for debugging
             log.error("Exception while shutting down SuroServer: " + e.getMessage(), e);
