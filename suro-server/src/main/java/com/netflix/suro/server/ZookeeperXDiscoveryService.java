@@ -4,12 +4,14 @@ import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Singleton;
+import com.netflix.suro.jackson.DefaultObjectMapper;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.x.discovery.ServiceDiscovery;
 import org.apache.curator.x.discovery.ServiceDiscoveryBuilder;
 import org.apache.curator.x.discovery.ServiceInstance;
+import org.apache.curator.x.discovery.UriSpec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,17 +25,18 @@ import java.util.List;
  */
 @Singleton
 public class ZookeeperXDiscoveryService {
-    static Logger log = LoggerFactory.getLogger(ZookeeperXDiscoveryService.class);
-    private final List<Closeable> closeables = Lists.newArrayList();
-    private ServiceDiscovery<String> discovery = null;
-    private ServiceInstance<String> instance = null;
+    private static Logger log = LoggerFactory.getLogger(ZookeeperXDiscoveryService.class);
+    private final List<Closeable> closeables;
     private final Injector injector;
     private final ServerConfig config;
+    private ServiceDiscovery<String> serviceDiscovery = null;
+    private ServiceInstance<String> thisInstance = null;
 
     @Inject
     public ZookeeperXDiscoveryService(ServerConfig config, Injector injector) {
-        this.injector = injector;
         this.config = config;
+        this.injector = injector;
+        this.closeables = Lists.newArrayList();
     }
 
     public void start() {
@@ -44,20 +47,24 @@ public class ZookeeperXDiscoveryService {
                         new RetryNTimes(10, 500));
                 client.start();
                 closeables.add(client);
-                instance = ServiceInstance.<String>builder()
-                        .payload("{}")
+
+                final UriSpec uriSpec = new UriSpec("{scheme}://{address}:{port}");
+                final DefaultObjectMapper objectMapper = injector.getInstance(DefaultObjectMapper.class);
+                thisInstance = ServiceInstance.<String>builder()
                         .name("suro")
+                        .payload(objectMapper.writeValueAsString(config))
                         .port(config.getPort())
+                        .uriSpec(uriSpec)
                         .build();
-                discovery = ServiceDiscoveryBuilder.builder(String.class)
+                serviceDiscovery = ServiceDiscoveryBuilder.<String>builder(String.class)
                         .client(client)
                         .basePath(configZookeeperUri.getPath())
-                        .thisInstance(instance)
+                        .thisInstance(thisInstance)
                         .build();
-                discovery.start();
-                closeables.add(discovery);
+                serviceDiscovery.start();
+                closeables.add(serviceDiscovery);
             } catch (Exception e) {
-                log.error("{} - {}.", e.getMessage(), config.getZookeeperUri(), e);
+                log.error("{} - {} {}", e.getMessage(), config.getZookeeperUri());
             }
         }
     }
@@ -73,9 +80,9 @@ public class ZookeeperXDiscoveryService {
     public void shutdown() {
         if (isPrefixZK()) {
             try {
-                this.discovery.unregisterService(this.instance);
+                this.serviceDiscovery.unregisterService(this.thisInstance);
             } catch (Exception e) {
-                log.error("{} - {}.", e.getMessage(), this.instance, e);
+                log.error("{} - {}.", e.getMessage(), this.thisInstance);
             }
             for (Closeable closeable : closeables) {
                 try {
