@@ -147,10 +147,10 @@ public class AsyncSuroClient implements ISuroClient {
         send(message);
     }
 
-    private boolean running;
+    private boolean running = false;
 
 
-    private long lastBatch;
+    private long lastBatch = System.currentTimeMillis();;
     private Runnable createPoller() {
         running = true;
         final AsyncSuroClient client = this;
@@ -161,7 +161,7 @@ public class AsyncSuroClient implements ISuroClient {
                 while (running || !messageQueue.isEmpty()) {
                     try {
                         Message msg = messageQueue.poll(
-                                Math.max(0, lastBatch + config.getAsyncTimeout() - System.currentTimeMillis()),
+                                Math.max(1, lastBatch + config.getAsyncTimeout() - System.currentTimeMillis()),
                                 TimeUnit.MILLISECONDS);
 
                         boolean expired = (msg == null);
