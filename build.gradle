@@ -58,12 +58,12 @@ subprojects {
     }
 
     dependencies {
-      compile 'com.netflix.archaius:archaius-core:0.5.11'
-      compile 'com.netflix.servo:servo-core:0.4.32'
-      compile 'com.netflix.governator:governator:1.2.3'
-      compile 'com.netflix.eureka:eureka-client:1.1.109'
-      compile 'com.netflix.ribbon:ribbon-core:0.2.1'
-      compile 'com.netflix.ribbon:ribbon-eureka:0.2.1'
+      compile 'com.netflix.archaius:archaius-core:0.6.0'
+      compile 'com.netflix.servo:servo-core:0.7.3'
+      compile 'com.netflix.governator:governator:1.2.12'
+      compile 'com.netflix.eureka:eureka-client:1.1.132'
+      compile 'com.netflix.ribbon:ribbon-core:0.3.12'
+      compile 'com.netflix.ribbon:ribbon-eureka:0.3.12'
       compile 'log4j:log4j:1.2.17'
 
       compile 'org.apache.thrift:libthrift:0.9.1'
