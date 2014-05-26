@@ -18,7 +18,7 @@ import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Singleton;
-import com.netflix.suro.jackson.DefaultObjectMapper;
+import com.netflix.suro.SuroInstanceDetails;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryNTimes;
@@ -26,6 +26,7 @@ import org.apache.curator.x.discovery.ServiceDiscovery;
 import org.apache.curator.x.discovery.ServiceDiscoveryBuilder;
 import org.apache.curator.x.discovery.ServiceInstance;
 import org.apache.curator.x.discovery.UriSpec;
+import org.apache.curator.x.discovery.details.JsonInstanceSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,45 +39,53 @@ import java.util.List;
  * @author thinker0
  */
 @Singleton
-public class ZookeeperXDiscoveryService {
-    private static Logger log = LoggerFactory.getLogger(ZookeeperXDiscoveryService.class);
+public class XDiscoveryService {
+    private static Logger log = LoggerFactory.getLogger(XDiscoveryService.class);
     private final List<Closeable> closeables;
     private final Injector injector;
     private final ServerConfig config;
-    private ServiceDiscovery<String> serviceDiscovery = null;
-    private ServiceInstance<String> thisInstance = null;
+    private ServiceDiscovery<SuroInstanceDetails> serviceDiscovery = null;
+    private ServiceInstance<SuroInstanceDetails> thisInstance = null;
 
     @Inject
-    public ZookeeperXDiscoveryService(ServerConfig config, Injector injector) {
+    public XDiscoveryService(ServerConfig config, Injector injector) {
         this.config = config;
         this.injector = injector;
         this.closeables = Lists.newArrayList();
-    }
-
-    public void start() {
         if (isPrefixZK()) {
             try {
                 final URI configZookeeperUri = parseURI(config.getZookeeperUri());
                 final CuratorFramework client = CuratorFrameworkFactory.newClient(configZookeeperUri.getHost(),
                         new RetryNTimes(10, 500));
                 client.start();
-                closeables.add(client);
+                this.closeables.add(client);
 
                 final UriSpec uriSpec = new UriSpec("{scheme}://{address}:{port}");
-                final DefaultObjectMapper objectMapper = injector.getInstance(DefaultObjectMapper.class);
-                thisInstance = ServiceInstance.<String>builder()
-                        .name("suro")
-                        .payload(objectMapper.writeValueAsString(config))
+                final JsonInstanceSerializer<SuroInstanceDetails> serializer = new JsonInstanceSerializer<SuroInstanceDetails>(SuroInstanceDetails.class);
+                final SuroInstanceDetails instanceDetails = new SuroInstanceDetails();
+                this.thisInstance = ServiceInstance.<SuroInstanceDetails>builder()
+                        .name(configZookeeperUri.getPath())
+                        .payload(instanceDetails)
                         .port(config.getPort())
                         .uriSpec(uriSpec)
                         .build();
-                serviceDiscovery = ServiceDiscoveryBuilder.<String>builder(String.class)
+                this.serviceDiscovery = ServiceDiscoveryBuilder.<SuroInstanceDetails>builder(SuroInstanceDetails.class)
                         .client(client)
                         .basePath(configZookeeperUri.getPath())
+                        .serializer(serializer)
                         .thisInstance(thisInstance)
                         .build();
-                serviceDiscovery.start();
-                closeables.add(serviceDiscovery);
+                this.closeables.add(this.serviceDiscovery);
+            } catch (Exception e) {
+                log.error("{} - {} {}", e.getMessage(), config.getZookeeperUri());
+            }
+        }
+    }
+
+    public void start() {
+        if (isPrefixZK()) {
+            try {
+                this.serviceDiscovery.start();
             } catch (Exception e) {
                 log.error("{} - {} {}", e.getMessage(), config.getZookeeperUri());
             }
@@ -91,6 +100,11 @@ public class ZookeeperXDiscoveryService {
         return URI.create(zookeeperUri);
     }
 
+    public ServiceInstance<SuroInstanceDetails> getThisInstance() {
+        return thisInstance;
+    }
+
+
     public void shutdown() {
         if (isPrefixZK()) {
             try {
@@ -98,12 +112,12 @@ public class ZookeeperXDiscoveryService {
             } catch (Exception e) {
                 log.error("{} - {}.", e.getMessage(), this.thisInstance);
             }
-            for (Closeable closeable : closeables) {
-                try {
-                    closeable.close();
-                } catch (IOException e) {
-                    // log.trace(e.getMessage(), e);
-                }
+        }
+        for (final Closeable closeable : closeables) {
+            try {
+                closeable.close();
+            } catch (IOException e) {
+                // log.trace(e.getMessage(), e);
             }
         }
     }

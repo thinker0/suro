@@ -22,7 +22,7 @@ import com.google.inject.Singleton;
 import com.netflix.suro.queue.MessageSetProcessor;
 import com.netflix.suro.server.StatusServer;
 import com.netflix.suro.server.ThriftServer;
-import com.netflix.suro.server.ZookeeperXDiscoveryService;
+import com.netflix.suro.server.XDiscoveryService;
 import com.netflix.suro.sink.SinkManager;
 import org.apache.log4j.Logger;
 
@@ -44,10 +44,10 @@ public class SuroService {
     private final ThriftServer server;
     private final MessageSetProcessor queue;
     private final SinkManager  sinkManager;
-    private final ZookeeperXDiscoveryService xDiscoveryService;
+    private final XDiscoveryService xDiscoveryService;
     
     @Inject
-    private SuroService(StatusServer statusServer, ThriftServer thriftServer, MessageSetProcessor queue, SinkManager sinkManager, ZookeeperXDiscoveryService xDiscoveryService) {
+    private SuroService(StatusServer statusServer, ThriftServer thriftServer, MessageSetProcessor queue, SinkManager sinkManager, XDiscoveryService xDiscoveryService) {
         this.statusServer = statusServer;
         this.server       = thriftServer;
         this.queue        = queue;
