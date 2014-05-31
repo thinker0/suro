@@ -62,6 +62,13 @@ public class AsyncSuroClient implements ISuroClient {
     public long getLostMessageCount() {
         return lostMessages.get();
     }
+
+    @Monitor(name = "MessageQueueSize", type = DataSourceType.GAUGE)
+    @Override
+    public long getNumOfPendingMessages() {
+        return messageQueue.size();
+    }
+
     @Monitor(name = TagKey.SENT_COUNT, type = DataSourceType.COUNTER)
     private AtomicLong sentMessages = new AtomicLong(0);
     @Override
@@ -147,10 +154,9 @@ public class AsyncSuroClient implements ISuroClient {
         send(message);
     }
 
-    private boolean running = false;
+    private boolean running;
 
-
-    private long lastBatch = System.currentTimeMillis();;
+    private long lastBatch;
     private Runnable createPoller() {
         running = true;
         final AsyncSuroClient client = this;
@@ -161,7 +167,7 @@ public class AsyncSuroClient implements ISuroClient {
                 while (running || !messageQueue.isEmpty()) {
                     try {
                         Message msg = messageQueue.poll(
-                                Math.max(1, lastBatch + config.getAsyncTimeout() - System.currentTimeMillis()),
+                                Math.max(0, lastBatch + config.getAsyncTimeout() - System.currentTimeMillis()),
                                 TimeUnit.MILLISECONDS);
 
                         boolean expired = (msg == null);
@@ -196,26 +202,20 @@ public class AsyncSuroClient implements ISuroClient {
         running = false;
         poller.shutdown();
         try {
-            poller.awaitTermination(config.getAsyncTimeout(), TimeUnit.MILLISECONDS);
+            poller.awaitTermination(5000 + config.getAsyncTimeout(), TimeUnit.MILLISECONDS);
             if (!poller.isTerminated()) {
-                log.error("AsyncSuroClient.poller didn't terminate gracefully within {} seconds", config.getAsyncTimeout()/1000);
+                log.error("AsyncSuroClient.poller didn't terminate gracefully within {} seconds", (5 + config.getAsyncTimeout()/1000));
                 poller.shutdownNow();
             }
             senders.shutdown();
-            senders.awaitTermination(config.getAsyncTimeout(), TimeUnit.MILLISECONDS);
+            senders.awaitTermination(5000 + config.getAsyncTimeout(), TimeUnit.MILLISECONDS);
             if (!senders.isTerminated()) {
-                log.error("AsyncSuroClient.senders didn't terminate gracefully within {} seconds", config.getAsyncTimeout()/1000);
+                log.error("AsyncSuroClient.senders didn't terminate gracefully within {} seconds", (5 + config.getAsyncTimeout()/1000));
                 senders.shutdownNow();
             }
-            poller.shutdownNow();
         } catch (InterruptedException e) {
             // ignore exceptions while shutting down
         }
-    }
-
-    @Monitor(name = "MessageQueueSize", type = DataSourceType.GAUGE)
-    private int getMessageQueueSize() {
-        return (int) messageQueue.size();
     }
 
     @Monitor(name = "JobQueueSize", type = DataSourceType.GAUGE)

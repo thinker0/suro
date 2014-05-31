@@ -7,9 +7,7 @@ import com.netflix.servo.monitor.Monitors;
 import com.netflix.suro.message.MessageContainer;
 import com.netflix.suro.sink.Sink;
 import com.netflix.suro.sink.localfile.LocalFileSink;
-import com.netflix.suro.sink.notice.Notice;
-import com.netflix.suro.sink.notice.QueueNotice;
-import com.netflix.suro.sink.remotefile.formatter.SimpleDateFormatter;
+import com.netflix.suro.sink.remotefile.formatter.DynamicRemotePrefixFormatter;
 import org.joda.time.Period;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +44,7 @@ public abstract class RemoteFileSink implements Sink {
             int concurrentUpload,
             boolean batchUpload) {
         this.localFileSink = localFileSink;
-        this.prefixFormatter = prefixFormatter == null ? new SimpleDateFormatter("yyyyMMdd") : prefixFormatter;
+        this.prefixFormatter = prefixFormatter == null ? new DynamicRemotePrefixFormatter("date(yyyyMMdd)") : prefixFormatter;
         this.batchUpload = batchUpload;
 
         Preconditions.checkNotNull(localFileSink, "localFileSink is needed");
@@ -237,4 +235,9 @@ public abstract class RemoteFileSink implements Sink {
     abstract void initialize();
     abstract void upload(String localFilePath, String remoteFilePath) throws Exception;
     abstract void notify(String filePath, long fileSize) throws Exception;
+
+    @Override
+    public long getNumOfPendingMessages() {
+        return localFileSink.getNumOfPendingMessages();
+    }
 }
