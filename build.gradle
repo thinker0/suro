@@ -31,13 +31,6 @@ allprojects {
         url 'https://oss.sonatype.org/content/groups/public/'
       }
     }
-    apply plugin: 'maven'
-    uploadArchives {
-        repositories.mavenDeployer {
-            repository(url: "http://maven.daumcorp.com/content/repositories/daum-pi/") {}
-            snapshotRepository(url: "http://maven.daumcorp.com/content/repositories/daum-pi-snapshots/") {}
-        }
-    }
 }
 
 apply from: file('gradle/convention.gradle')
@@ -58,12 +51,12 @@ subprojects {
     }
 
     dependencies {
-      compile 'com.netflix.archaius:archaius-core:0.6.0'
-      compile 'com.netflix.servo:servo-core:0.7.3'
-      compile 'com.netflix.governator:governator:1.2.12'
-      compile 'com.netflix.eureka:eureka-client:1.1.132'
-      compile 'com.netflix.ribbon:ribbon-core:0.3.12'
-      compile 'com.netflix.ribbon:ribbon-eureka:0.3.12'
+      compile 'com.netflix.archaius:archaius-core:0.5.11'
+      compile 'com.netflix.servo:servo-core:0.4.32'
+      compile 'com.netflix.governator:governator:1.2.3'
+      compile 'com.netflix.eureka:eureka-client:1.1.109'
+      compile 'com.netflix.ribbon:ribbon-core:0.2.1'
+      compile 'com.netflix.ribbon:ribbon-eureka:0.2.1'
       compile 'log4j:log4j:1.2.17'
 
       compile 'org.apache.thrift:libthrift:0.9.1'
@@ -124,12 +117,10 @@ project(':suro-server') {
     compile 'com.amazonaws:aws-java-sdk:1.4.7'
 
     compile 'commons-cli:commons-cli:1.2'
-
-    runtime 'org.slf4j:jul-to-slf4j:1.7.7'
-    runtime 'org.slf4j:jcl-over-slf4j:1.7.7'
-    runtime 'ch.qos.logback:logback-classic:1.1.2'
-
+    
+    testCompile 'org.apache.curator:curator-test:2.4.2'
     testCompile project(':suro-client').sourceSets.test.output
+    testCompile project(':suro-kafka').sourceSets.test.output
   }
 
   mainClassName = "com.netflix.suro.SuroServer"
@@ -137,7 +128,7 @@ project(':suro-server') {
     main = "com.netflix.suro.SuroServer"
     classpath = sourceSets.main.runtimeClasspath
     classpath += sourceSets.main.compileClasspath
-    args = ['-m', 'conf/routingmap.json', '-s', 'conf/sink.json']
+    args = ['-m', 'conf/routingmap.json', '-s', 'conf/sink.json', '-i', 'conf/input.json']
   }
   installApp {
     into('build/install/'+applicationName + '-' + version){
