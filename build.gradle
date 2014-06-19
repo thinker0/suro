@@ -31,6 +31,13 @@ allprojects {
         url 'https://oss.sonatype.org/content/groups/public/'
       }
     }
+    apply plugin: 'maven'
+    uploadArchives {
+        repositories.mavenDeployer {
+            repository(url: "http://maven.daumcorp.com/content/repositories/daum-pi/") {}
+            snapshotRepository(url: "http://maven.daumcorp.com/content/repositories/daum-pi-snapshots/") {}
+        }
+    }
 }
 
 apply from: file('gradle/convention.gradle')
